@@ -83,8 +83,8 @@
             
             if (encodedData) {
                 try {
-                    // Декодируем данные из base64
-                    const decodedData = atob(encodedData);
+                    // Декодируем данные из URL
+                    const decodedData = decodeURIComponent(encodedData);
                     // Вставляем ответ в контейнер
                     document.getElementById('answer').textContent = decodedData;
                     
