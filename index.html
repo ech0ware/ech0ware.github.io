@@ -106,26 +106,4 @@
                     }
                     const decodedData = new TextDecoder('utf-8').decode(bytes);
 
-                    console.log('Decoded data:', decodedData); // Для отладки
-
-                    // Вставляем ответ в контейнер
-                    answerElement.textContent = decodedData;
-
-                    // Рендерим LaTeX с помощью MathJax
-                    MathJax.typesetPromise([answerElement]).then(() => {
-                        console.log('MathJax rendering complete');
-                    }).catch((err) => {
-                        console.error('MathJax error:', err);
-                        answerElement.textContent = 'Ошибка рендеринга LaTeX: ' + err.message;
-                    });
-                } catch (error) {
-                    console.error('Decoding error:', error);
-                    answerElement.textContent = 'Ошибка декодирования ответа: ' + error.message;
-                }
-            } else {
-                answerElement.textContent = 'Данные не получены.';
-            }
-        });
-    </script>
-</body>
-</html>
+                    console.log('Decoded data:', decodedData); // Для
