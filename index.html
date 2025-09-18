@@ -3,185 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ответ VerseAI</title>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true,
-                processEnvironments: true,
-                tags: 'ams',
-                packages: {'[+]': ['ams', 'noerrors', 'noundefined']}
-            },
-            chtml: {
-                fontCache: 'global',
-                scale: 1.2,
-                displayAlign: 'center',
-                displayIndent: '0em'
-            },
-            options: {
-                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-                ignoreHtmlClass: 'tex2jax_ignore',
-                processHtmlClass: 'tex2jax_process'
-            },
-            startup: {
-                ready: () => {
-                    MathJax.startup.defaultReady();
-                    MathJax.startup.promise.then(() => {
-                        console.log('MathJax полностью загружен');
-                    });
-                }
-            }
-        };
-    </script>
+    <title>AI Response Viewer</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
             margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
         }
-        .container {
-            max-width: 800px;
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .answer-content {
-            background-color: #1e1e1e;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
+        #content {
             white-space: pre-wrap;
             word-wrap: break-word;
-            font-size: 16px;
-            line-height: 1.8;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
         }
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #4CAF50;
-        }
-        .mjx-chtml {
-            margin: 0.5em 0;
-            display: block;
-            text-align: center;
-            font-size: 1.1em;
-        }
-        .MJX-display {
-            margin: 1em 0;
-            padding: 0.5em 0;
-        }
-        .mjx-chtml[tabindex]:focus, .mjx-chtml[tabindex] {
-            display: inline-block;
-        }
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            .container {
-                padding: 10px;
-            }
-            .answer-content {
-                padding: 15px;
-                font-size: 14px;
-            }
-            .mjx-chtml {
-                font-size: 1em;
-            }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">VerseAI</div>
-            <div>Ваш ответ:</div>
-        </div>
-        <div id="answer" class="answer-content">Загрузка...</div>
-    </div>
+    <div id="content"></div>
+    <button id="copyButton">Скопировать в буфер</button>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const encodedData = urlParams.get('data');
-            const answerElement = document.getElementById('answer');
+        // Получаем параметр text из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const text = urlParams.get('text');
 
-            if (encodedData) {
-                try {
-                    // Упрощённая проверка Base64 (менее строгая)
-                    if (!encodedData.match(/^[A-Za-z0-9\-_=]+$/)) {
-                        console.warn('Base64-строка содержит потенциально некорректные символы:', encodedData);
-                    }
+        if (text) {
+            // Декодируем HTML-сущности
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            const decodedText = textarea.value;
 
-                    // Преобразование URL-safe Base64 в стандартный
-                    let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
-                    while (base64.length % 4) {
-                        base64 += '=';
-                    }
+            // Отображаем текст
+            document.getElementById('content').innerText = decodedText;
 
-                    // Декодирование Base64
-                    let decodedData;
-                    try {
-                        const binaryString = atob(base64);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }
-                        decodedData = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-                    } catch (decodeError) {
-                        console.error('Ошибка при декодировании Base64:', decodeError);
-                        throw new Error('Не удалось декодировать Base64-данные');
-                    }
+            // Рендерим LaTeX
+            MathJax.typeset();
 
-                    console.log('Декодированные данные:', decodedData);
-
-                    // Вставка текста
-                    answerElement.textContent = decodedData;
-
-                    // Рендеринг MathJax
-                    function renderMathJax(attempts = 5) {
-                        if (attempts <= 0) {
-                            console.error('MathJax не загружен после нескольких попыток');
-                            answerElement.textContent = 'Ошибка загрузки MathJax. Попробуйте обновить страницу.';
-                            return;
-                        }
-                        if (window.MathJax && window.MathJax.typeset) {
-                            try {
-                                window.MathJax.typeset([answerElement]);
-                                console.log('MathJax рендеринг завершён');
-                            } catch (err) {
-                                console.error('Ошибка MathJax:', err);
-                                answerElement.textContent = 'Ошибка рендеринга LaTeX: ' + err.message;
-                            }
-                        } else {
-                            console.warn('MathJax ещё не загружен, повтор через 200 мс...');
-                            setTimeout(() => renderMathJax(attempts - 1), 200);
-                        }
-                    }
-                    renderMathJax();
-
-                } catch (error) {
-                    console.error('Ошибка декодирования:', error);
-                    answerElement.textContent = 'Ошибка декодирования: ' + error.message + '\nПожалуйста, проверьте консоль (F12) для деталей.';
-                }
-            } else {
-                answerElement.textContent = 'Данные не переданы в URL.';
-            }
-        });
+            // Настраиваем кнопку копирования
+            document.getElementById('copyButton').onclick = () => {
+                navigator.clipboard.writeText(decodedText).then(() => {
+                    Telegram.WebApp.showAlert('Текст скопирован в буфер обмена!');
+                }).catch(err => {
+                    Telegram.WebApp.showAlert('Ошибка копирования: ' + err);
+                });
+            };
+        } else {
+            document.getElementById('content').innerText = 'Нет текста для отображения.';
+            document.getElementById('copyButton').style.display = 'none';
+        }
     </script>
 </body>
 </html>
