@@ -3,61 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>бр бр патапимо</title>
+    <title>Ответ VerseAI</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
     <style>
         body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #0a090a; /* Фон */
-            margin: 0;
         }
-        img {
-            max-width: 100%;
-            height: auto;
-            cursor: pointer;
-            box-shadow: 0 0 20px 10px #00d9bb; /* Свечение */
-            border-radius: 10px; /* Скругление углов */
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .answer-content {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 10px;
+            }
+            .answer-content {
+                padding: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <img id="myImage" src="image.png" alt="Нажми, чтобы услышать звук">    
-    <audio id="myAudio" src="brbr.mp3"></audio>
+    <div class="container">
+        <div class="header">
+            <div class="logo">VerseAI</div>
+            <div>Ваш ответ:</div>
+        </div>
+        <div id="answer" class="answer-content">Загрузка...</div>
+    </div>
 
     <script>
-        const audio = document.getElementById('myAudio');
-        const image = document.getElementById('myImage');
-
-        image.addEventListener('click', function() {
-            audio.play(); // Звук
-
-            // СПАМ
-            function spamNotifications() {
-                if (document.visibilityState === 'visible') {
-                    new Notification('<3');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Получаем данные из URL параметров
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedData = urlParams.get('data');
+            
+            if (encodedData) {
+                try {
+                    // Декодируем данные из base64
+                    const decodedData = atob(encodedData);
+                    // Вставляем ответ в контейнер
+                    document.getElementById('answer').textContent = decodedData;
+                    
+                    // Обновляем MathJax для рендеринга LaTeX
+                    MathJax.typesetPromise().then(() => {
+                        console.log('MathJax rendering complete');
+                    }).catch((err) => {
+                        console.error('MathJax error:', err);
+                    });
+                } catch (error) {
+                    document.getElementById('answer').textContent = 'Ошибка декодирования ответа.';
+                    console.error('Decoding error:', error);
                 }
-            }
-
-            // Запрос на спам
-            if (Notification.permission !== 'granted') {
-                Notification.requestPermission().then(function(permission) {
-                    if (permission === 'granted') {
-                        const intervalId = setInterval(spamNotifications, 100); // Интервал спама
-
-                        setTimeout(() => {
-                            clearInterval(intervalId); // Остановить интервал
-                        }, 300000); // 5 минут = 300000 мс
-                    }
-                });
             } else {
-                const intervalId = setInterval(spamNotifications, 100); // Интервал спама
-
-                // Остановка спама
-                setTimeout(() => {
-                    clearInterval(intervalId); // Остановка
-                }, 300000); // 5минут
+                document.getElementById('answer').textContent = 'Данные не получены.';
             }
         });
     </script>
