@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ответ VerseAI</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
     <script>
         window.MathJax = {
             tex: {
@@ -13,11 +13,27 @@
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
                 processEscapes: true,
                 processEnvironments: true,
-                tags: 'ams'
+                tags: 'ams',
+                packages: {'[+]': ['ams', 'noerrors', 'noundefined']}
             },
             chtml: {
                 fontCache: 'global',
-                scale: 1.1 // Увеличиваем масштаб формул для лучшей читаемости
+                scale: 1.2,
+                displayAlign: 'center',
+                displayIndent: '0em'
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            startup: {
+                ready: () => {
+                    MathJax.startup.defaultReady();
+                    MathJax.startup.promise.then(() => {
+                        console.log('MathJax полностью загружен');
+                    });
+                }
             }
         };
     </script>
@@ -46,6 +62,8 @@
             margin-top: 20px;
             white-space: pre-wrap;
             word-wrap: break-word;
+            font-size: 16px;
+            line-height: 1.8;
         }
         .header {
             text-align: center;
@@ -57,14 +75,18 @@
             margin-bottom: 10px;
             color: #4CAF50;
         }
-        /* Стили для улучшения рендеринга LaTeX */
         .mjx-chtml {
             margin: 0.5em 0;
             display: block;
-            text-align: center; /* Центрируем формулы */
+            text-align: center;
+            font-size: 1.1em;
         }
-        .MJXc-display {
+        .MJX-display {
             margin: 1em 0;
+            padding: 0.5em 0;
+        }
+        .mjx-chtml[tabindex]:focus, .mjx-chtml[tabindex] {
+            display: inline-block;
         }
         @media (max-width: 768px) {
             body {
@@ -75,9 +97,10 @@
             }
             .answer-content {
                 padding: 15px;
+                font-size: 14px;
             }
             .mjx-chtml {
-                font-size: 0.9em; /* Уменьшаем формулы на мобильных */
+                font-size: 1em;
             }
         }
     </style>
@@ -99,9 +122,9 @@
 
             if (encodedData) {
                 try {
-                    // Проверка валидности Base64
-                    if (!/^[A-Za-z0-9\-_]*=?$/.test(encodedData)) {
-                        throw new Error('Некорректная Base64-строка');
+                    // Упрощённая проверка Base64 (менее строгая)
+                    if (!encodedData.match(/^[A-Za-z0-9\-_=]+$/)) {
+                        console.warn('Base64-строка содержит потенциально некорректные символы:', encodedData);
                     }
 
                     // Преобразование URL-safe Base64 в стандартный
@@ -111,20 +134,31 @@
                     }
 
                     // Декодирование Base64
-                    const binaryString = atob(base64);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
+                    let decodedData;
+                    try {
+                        const binaryString = atob(base64);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        decodedData = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+                    } catch (decodeError) {
+                        console.error('Ошибка при декодировании Base64:', decodeError);
+                        throw new Error('Не удалось декодировать Base64-данные');
                     }
-                    const decodedData = new TextDecoder('utf-8').decode(bytes);
 
-                    console.log('Декодированные данные:', decodedData); // Для отладки
+                    console.log('Декодированные данные:', decodedData);
 
                     // Вставка текста
                     answerElement.textContent = decodedData;
 
                     // Рендеринг MathJax
-                    function renderMathJax() {
+                    function renderMathJax(attempts = 5) {
+                        if (attempts <= 0) {
+                            console.error('MathJax не загружен после нескольких попыток');
+                            answerElement.textContent = 'Ошибка загрузки MathJax. Попробуйте обновить страницу.';
+                            return;
+                        }
                         if (window.MathJax && window.MathJax.typeset) {
                             try {
                                 window.MathJax.typeset([answerElement]);
@@ -135,14 +169,14 @@
                             }
                         } else {
                             console.warn('MathJax ещё не загружен, повтор через 200 мс...');
-                            setTimeout(renderMathJax, 200);
+                            setTimeout(() => renderMathJax(attempts - 1), 200);
                         }
                     }
                     renderMathJax();
 
                 } catch (error) {
                     console.error('Ошибка декодирования:', error);
-                    answerElement.textContent = 'Ошибка декодирования: ' + error.message;
+                    answerElement.textContent = 'Ошибка декодирования: ' + error.message + '\nПожалуйста, проверьте консоль (F12) для деталей.';
                 }
             } else {
                 answerElement.textContent = 'Данные не переданы в URL.';
