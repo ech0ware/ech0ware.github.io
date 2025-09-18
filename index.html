@@ -1,75 +1,58 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Response Viewer</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background-color: #1c2526;
-            color: #ffffff;
-            margin: 0;
-        }
-        #content {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            background-color: #2e2e2e;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            color: #ffffff;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #ffffff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Ответ ИИ</title>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f7f7f7;
+    }
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+    #answer {
+      white-space: pre-wrap;
+      font-size: 1.1em;
+    }
+  </style>
 </head>
 <body>
-    <div id="content"></div>
-    <button id="copyButton">Скопировать в буфер</button>
+  <div class="box">
+    <h1>Ответ ИИ:</h1>
+    <div id="answer"></div>
+  </div>
 
-    <script>
-        // Получаем параметр text из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const text = urlParams.get('text');
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const text = params.get("text") || "Нет ответа";
 
-        if (text) {
-            // Декодируем HTML-сущности
-            const textarea = document.createElement('textarea');
-            textarea.innerHTML = text;
-            const decodedText = textarea.value;
+    // Декодируем текст
+    const decoded = decodeURIComponent(text);
 
-            // Отображаем текст
-            document.getElementById('content').innerText = decodedText;
+    // Вставляем
+    document.getElementById("answer").innerText = decoded;
 
-            // Рендерим LaTeX
-            MathJax.typeset();
-
-            // Настраиваем кнопку копирования
-            document.getElementById('copyButton').onclick = () => {
-                navigator.clipboard.writeText(decodedText).then(() => {
-                    Telegram.WebApp.showAlert('Текст скопирован в буфер обмена!');
-                }).catch(err => {
-                    Telegram.WebApp.showAlert('Ошибка копирования: ' + err);
-                });
-            };
-        } else {
-            document.getElementById('content').innerText = 'Нет текста для отображения.';
-            document.getElementById('copyButton').style.display = 'none';
-        }
-    </script>
+    // Ререндерим MathJax
+    window.MathJax = {
+      tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]}
+    };
+    window.addEventListener('load', () => {
+      MathJax.typesetPromise();
+    });
+  </script>
 </body>
 </html>
