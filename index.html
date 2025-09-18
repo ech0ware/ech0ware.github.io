@@ -7,7 +7,7 @@
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>
-        MathJax = {
+        window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
@@ -15,6 +15,11 @@
             },
             svg: {
                 fontCache: 'global'
+            },
+            startup: {
+                ready: function () {
+                    console.log('MathJax loaded');
+                }
             }
         };
     </script>
@@ -78,63 +83,59 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Получаем данные из URL параметров
             const urlParams = new URLSearchParams(window.location.search);
             const encodedData = urlParams.get('data');
             const answerElement = document.getElementById('answer');
 
-            if (encodedData) {
-                try {
-                    // Проверяем, является ли строка валидной Base64
-                    if (!/^[A-Za-z0-9\-_]+=*$/.test(encodedData)) {
-                        throw new Error('Некорректная строка Base64');
-                    }
-
-                    // Заменяем URL-safe символы (- на +, _ на /) и добавляем padding
-                    let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
-                    while (base64.length % 4) {
-                        base64 += '=';
-                    }
-
-                    // Декодируем Base64
-                    const binaryString = atob(base64);
-
-                    // Преобразуем в UTF-8
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    const decodedData = new TextDecoder('utf-8').decode(bytes);
-
-                    console.log('Decoded data:', decodedData); // Для отладки
-
-                    // Вставляем ответ в контейнер
-                    answerElement.textContent = decodedData;
-
-                    // Ожидаем загрузки MathJax и рендерим LaTeX
-                    function renderMathJax() {
-                        if (window.MathJax && typeof window.MathJax.typeset === 'function') {
-                            try {
-                                window.MathJax.typeset([answerElement]);
-                                console.log('MathJax rendering complete');
-                            } catch (err) {
-                                console.error('MathJax error:', err);
-                                answerElement.textContent = 'Ошибка рендеринга LaTeX: ' + err.message;
-                            }
-                        } else {
-                            console.warn('MathJax not loaded yet, retrying...');
-                            setTimeout(renderMathJax, 100); // Повторяем через 100 мс
-                        }
-                    }
-
-                    renderMathJax();
-
-                } catch (error) {
-                    console.error('Decoding error:', error);
-                    answerElement.textContent = 'Ошибка декодирования ответа: ' + error.message;
-                }
-            } else {
+            if (!encodedData) {
                 answerElement.textContent = 'Данные не получены.';
+                return;
+            }
+
+            try {
+                // Упрощенное декодирование Base64 (URL-safe)
+                let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
+                // Добавляем padding, если нужно
+                switch (base64.length % 4) {
+                    case 2: base64 += '=='; break;
+                    case 3: base64 += '='; break;
+                }
+
+                // Декодируем
+                const binaryString = atob(base64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const decodedData = new TextDecoder('utf-8').decode(bytes);
+
+                console.log('Decoded data:', decodedData); // Для отладки
+
+                // Вставляем текст
+                answerElement.textContent = decodedData;
+
+                // Рендерим MathJax (с проверкой)
+                function tryRenderMathJax() {
+                    if (window.MathJax && window.MathJax.typeset) {
+                        try {
+                            window.MathJax.typesetPromise([answerElement]).catch(err => {
+                                console.warn('MathJax fallback: rendering as plain text');
+                            }).then(() => {
+                                console.log('MathJax rendering complete');
+                            });
+                        } catch (err) {
+                            console.warn('MathJax error, using plain text:', err);
+                        }
+                    } else {
+                        // Повторяем, если MathJax не готов
+                        setTimeout(tryRenderMathJax, 200);
+                    }
+                }
+                tryRenderMathJax();
+
+            } catch (error) {
+                console.error('Decoding error:', error);
+                answerElement.innerHTML = '<strong>Ошибка декодирования:</strong> ' + error.message + '<br><br><em>Сырые данные:</em><br>' + encodedData.substring(0, 100) + '...';
             }
         });
     </script>
