@@ -10,7 +10,8 @@
         MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
             },
             svg: {
                 fontCache: 'global'
@@ -80,42 +81,46 @@
             // Получаем данные из URL параметров
             const urlParams = new URLSearchParams(window.location.search);
             const encodedData = urlParams.get('data');
-            
             const answerElement = document.getElementById('answer');
-            
+
             if (encodedData) {
                 try {
-                    // Подготавливаем Base64 для декодирования (добавляем padding, если нужно)
+                    // Проверяем, является ли строка валидной Base64
+                    if (!/^[A-Za-z0-9\-_]+=*$/.test(encodedData)) {
+                        throw new Error('Некорректная строка Base64');
+                    }
+
+                    // Заменяем URL-safe символы (- на +, _ на /) и добавляем padding
                     let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
                     while (base64.length % 4) {
                         base64 += '=';
                     }
-                    
-                    // Декодируем Base64 в бинарные данные
+
+                    // Декодируем Base64
                     const binaryString = atob(base64);
-                    
-                    // Преобразуем в Uint8Array и декодируем как UTF-8
+
+                    // Преобразуем в UTF-8
                     const bytes = new Uint8Array(binaryString.length);
                     for (let i = 0; i < binaryString.length; i++) {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
                     const decodedData = new TextDecoder('utf-8').decode(bytes);
-                    
+
                     console.log('Decoded data:', decodedData); // Для отладки
-                    
+
                     // Вставляем ответ в контейнер
                     answerElement.textContent = decodedData;
-                    
-                    // Обновляем MathJax для рендеринга LaTeX
+
+                    // Рендерим LaTeX с помощью MathJax
                     MathJax.typesetPromise([answerElement]).then(() => {
                         console.log('MathJax rendering complete');
                     }).catch((err) => {
                         console.error('MathJax error:', err);
-                        answerElement.textContent = 'Ошибка рендеринга LaTeX.';
+                        answerElement.textContent = 'Ошибка рендеринга LaTeX: ' + err.message;
                     });
                 } catch (error) {
-                    answerElement.textContent = 'Ошибка декодирования ответа.';
                     console.error('Decoding error:', error);
+                    answerElement.textContent = 'Ошибка декодирования ответа: ' + error.message;
                 }
             } else {
                 answerElement.textContent = 'Данные не получены.';
