@@ -11,15 +11,13 @@
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true
+                processEscapes: true,
+                processEnvironments: true,
+                tags: 'ams'
             },
-            svg: {
-                fontCache: 'global'
-            },
-            startup: {
-                ready: function () {
-                    console.log('MathJax loaded');
-                }
+            chtml: {
+                fontCache: 'global',
+                scale: 1.1 // Увеличиваем масштаб формул для лучшей читаемости
             }
         };
     </script>
@@ -59,6 +57,15 @@
             margin-bottom: 10px;
             color: #4CAF50;
         }
+        /* Стили для улучшения рендеринга LaTeX */
+        .mjx-chtml {
+            margin: 0.5em 0;
+            display: block;
+            text-align: center; /* Центрируем формулы */
+        }
+        .MJXc-display {
+            margin: 1em 0;
+        }
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -68,6 +75,9 @@
             }
             .answer-content {
                 padding: 15px;
+            }
+            .mjx-chtml {
+                font-size: 0.9em; /* Уменьшаем формулы на мобильных */
             }
         }
     </style>
@@ -87,55 +97,55 @@
             const encodedData = urlParams.get('data');
             const answerElement = document.getElementById('answer');
 
-            if (!encodedData) {
-                answerElement.textContent = 'Данные не получены.';
-                return;
-            }
-
-            try {
-                // Упрощенное декодирование Base64 (URL-safe)
-                let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
-                // Добавляем padding, если нужно
-                switch (base64.length % 4) {
-                    case 2: base64 += '=='; break;
-                    case 3: base64 += '='; break;
-                }
-
-                // Декодируем
-                const binaryString = atob(base64);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                const decodedData = new TextDecoder('utf-8').decode(bytes);
-
-                console.log('Decoded data:', decodedData); // Для отладки
-
-                // Вставляем текст
-                answerElement.textContent = decodedData;
-
-                // Рендерим MathJax (с проверкой)
-                function tryRenderMathJax() {
-                    if (window.MathJax && window.MathJax.typeset) {
-                        try {
-                            window.MathJax.typesetPromise([answerElement]).catch(err => {
-                                console.warn('MathJax fallback: rendering as plain text');
-                            }).then(() => {
-                                console.log('MathJax rendering complete');
-                            });
-                        } catch (err) {
-                            console.warn('MathJax error, using plain text:', err);
-                        }
-                    } else {
-                        // Повторяем, если MathJax не готов
-                        setTimeout(tryRenderMathJax, 200);
+            if (encodedData) {
+                try {
+                    // Проверка валидности Base64
+                    if (!/^[A-Za-z0-9\-_]*=?$/.test(encodedData)) {
+                        throw new Error('Некорректная Base64-строка');
                     }
-                }
-                tryRenderMathJax();
 
-            } catch (error) {
-                console.error('Decoding error:', error);
-                answerElement.innerHTML = '<strong>Ошибка декодирования:</strong> ' + error.message + '<br><br><em>Сырые данные:</em><br>' + encodedData.substring(0, 100) + '...';
+                    // Преобразование URL-safe Base64 в стандартный
+                    let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
+                    while (base64.length % 4) {
+                        base64 += '=';
+                    }
+
+                    // Декодирование Base64
+                    const binaryString = atob(base64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const decodedData = new TextDecoder('utf-8').decode(bytes);
+
+                    console.log('Декодированные данные:', decodedData); // Для отладки
+
+                    // Вставка текста
+                    answerElement.textContent = decodedData;
+
+                    // Рендеринг MathJax
+                    function renderMathJax() {
+                        if (window.MathJax && window.MathJax.typeset) {
+                            try {
+                                window.MathJax.typeset([answerElement]);
+                                console.log('MathJax рендеринг завершён');
+                            } catch (err) {
+                                console.error('Ошибка MathJax:', err);
+                                answerElement.textContent = 'Ошибка рендеринга LaTeX: ' + err.message;
+                            }
+                        } else {
+                            console.warn('MathJax ещё не загружен, повтор через 200 мс...');
+                            setTimeout(renderMathJax, 200);
+                        }
+                    }
+                    renderMathJax();
+
+                } catch (error) {
+                    console.error('Ошибка декодирования:', error);
+                    answerElement.textContent = 'Ошибка декодирования: ' + error.message;
+                }
+            } else {
+                answerElement.textContent = 'Данные не переданы в URL.';
             }
         });
     </script>
