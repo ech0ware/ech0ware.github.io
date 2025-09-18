@@ -85,25 +85,39 @@
 
             if (encodedData) {
                 try {
-                    // Проверяем, является ли строка валидной Base64
-                    if (!/^[A-Za-z0-9\-_]+=*$/.test(encodedData)) {
-                        throw new Error('Некорректная строка Base64');
+                    // Декодируем данные из URL
+                    const decodedData = decodeURIComponent(encodedData);
+                    console.log('Decoded data:', decodedData); // Для отладки
+
+                    // Вставляем ответ в контейнер
+                    answerElement.textContent = decodedData;
+
+                    // Ожидаем загрузки MathJax и рендерим LaTeX
+                    function renderMathJax() {
+                        if (window.MathJax && typeof window.MathJax.typeset === 'function') {
+                            try {
+                                window.MathJax.typeset([answerElement]);
+                                console.log('MathJax rendering complete');
+                            } catch (err) {
+                                console.error('MathJax error:', err);
+                                answerElement.textContent = 'Ошибка рендеринга LaTeX: ' + err.message;
+                            }
+                        } else {
+                            console.warn('MathJax not loaded yet, retrying...');
+                            setTimeout(renderMathJax, 100); // Повторяем через 100 мс
+                        }
                     }
 
-                    // Заменяем URL-safe символы (- на +, _ на /) и добавляем padding
-                    let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
-                    while (base64.length % 4) {
-                        base64 += '=';
-                    }
+                    renderMathJax();
 
-                    // Декодируем Base64
-                    const binaryString = atob(base64);
-
-                    // Преобразуем в UTF-8
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    const decodedData = new TextDecoder('utf-8').decode(bytes);
-
-                    console.log('Decoded data:', decodedData); // Для
+                } catch (error) {
+                    console.error('Decoding error:', error);
+                    answerElement.textContent = 'Ошибка декодирования ответа: ' + error.message;
+                }
+            } else {
+                answerElement.textContent = 'Данные не получены.';
+            }
+        });
+    </script>
+</body>
+</html>
