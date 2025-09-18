@@ -81,25 +81,44 @@
             const urlParams = new URLSearchParams(window.location.search);
             const encodedData = urlParams.get('data');
             
+            const answerElement = document.getElementById('answer');
+            
             if (encodedData) {
                 try {
-                    // Декодируем данные из URL
-                    const decodedData = decodeURIComponent(encodedData);
+                    // Подготавливаем Base64 для декодирования (добавляем padding, если нужно)
+                    let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
+                    while (base64.length % 4) {
+                        base64 += '=';
+                    }
+                    
+                    // Декодируем Base64 в бинарные данные
+                    const binaryString = atob(base64);
+                    
+                    // Преобразуем в Uint8Array и декодируем как UTF-8
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const decodedData = new TextDecoder('utf-8').decode(bytes);
+                    
+                    console.log('Decoded data:', decodedData); // Для отладки
+                    
                     // Вставляем ответ в контейнер
-                    document.getElementById('answer').textContent = decodedData;
+                    answerElement.textContent = decodedData;
                     
                     // Обновляем MathJax для рендеринга LaTeX
-                    MathJax.typesetPromise().then(() => {
+                    MathJax.typesetPromise([answerElement]).then(() => {
                         console.log('MathJax rendering complete');
                     }).catch((err) => {
                         console.error('MathJax error:', err);
+                        answerElement.textContent = 'Ошибка рендеринга LaTeX.';
                     });
                 } catch (error) {
-                    document.getElementById('answer').textContent = 'Ошибка декодирования ответа.';
+                    answerElement.textContent = 'Ошибка декодирования ответа.';
                     console.error('Decoding error:', error);
                 }
             } else {
-                document.getElementById('answer').textContent = 'Данные не получены.';
+                answerElement.textContent = 'Данные не получены.';
             }
         });
     </script>
