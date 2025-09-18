@@ -85,8 +85,27 @@
 
             if (encodedData) {
                 try {
-                    // Декодируем данные из URL
-                    const decodedData = decodeURIComponent(encodedData);
+                    // Проверяем, является ли строка валидной Base64
+                    if (!/^[A-Za-z0-9\-_]+=*$/.test(encodedData)) {
+                        throw new Error('Некорректная строка Base64');
+                    }
+
+                    // Заменяем URL-safe символы (- на +, _ на /) и добавляем padding
+                    let base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
+                    while (base64.length % 4) {
+                        base64 += '=';
+                    }
+
+                    // Декодируем Base64
+                    const binaryString = atob(base64);
+
+                    // Преобразуем в UTF-8
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const decodedData = new TextDecoder('utf-8').decode(bytes);
+
                     console.log('Decoded data:', decodedData); // Для отладки
 
                     // Вставляем ответ в контейнер
