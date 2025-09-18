@@ -3,50 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <title>Ответ ИИ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- MathJax для LaTeX -->
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async
     src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  
+  <!-- Простейший CSS для miniapp и темной темы -->
   <style>
-    body {
-      font-family: sans-serif;
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
-      background: #f7f7f7;
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .box {
-      background: white;
+    .container {
+      max-width: 600px;
+      width: 90%;
       padding: 20px;
+      background-color: #1e1e1e;
       border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      overflow-wrap: break-word;
     }
     h1 {
       font-size: 1.5em;
       margin-bottom: 1em;
+      text-align: center;
+      color: #f0f0f0;
     }
     #answer {
+      font-size: 1em;
+      line-height: 1.5;
       white-space: pre-wrap;
-      font-size: 1.1em;
+    }
+    a {
+      color: #90caf9;
+    }
+    ul {
+      padding-left: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Ответ ИИ:</h1>
+  <div class="container">
+    <h1>Ответ ИИ</h1>
     <div id="answer"></div>
   </div>
 
   <script>
+    // Получаем текст из URL
     const params = new URLSearchParams(window.location.search);
     const text = params.get("text") || "Нет ответа";
 
-    // Декодируем текст
+    // Декодируем
     const decoded = decodeURIComponent(text);
 
-    // Вставляем
-    document.getElementById("answer").innerText = decoded;
+    // Простейший Markdown (жирный, курсив, списки)
+    function parseMarkdown(str) {
+      return str
+        .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')        // **жирный**
+        .replace(/\*(.+?)\*/g, '<i>$1</i>')           // *курсив*
+        .replace(/^\s*-\s(.+)$/gm, '<li>$1</li>')     // - список
+        .replace(/(<li>.+?<\/li>)/gm, '<ul>$1</ul>'); // оборачиваем li в ul
+    }
 
-    // Ререндерим MathJax
+    document.getElementById("answer").innerHTML = parseMarkdown(decoded);
+
+    // MathJax для рендера LaTeX
     window.MathJax = {
       tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]}
     };
